@@ -1,0 +1,1284 @@
+//quitar lo que se rompen
+//establecer red de seguridad
+//bajar salto de muelles
+
+// RequestAnimFrame: a browser API for getting smooth animations
+window.requestAnimFrame = (function() {
+	return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
+	function(callback) {
+		window.setTimeout(callback, 1000 / 60);
+	};
+})();
+
+var saveNet = true;
+
+//WALINWA VARS****************1*******
+
+var GAME_4_WALIS                    = 0;
+var GAME_4_WALIS_INCREASE           = 2;
+var GAME_4_MAX_WALIS                = 50;
+var GAME_4_POINTS_WALI_INCREASE     = 200;
+var GAME_4_POINTS_PICK_WORD_CORRECT = 50;
+var GAME_4_POINTS_PICK_WORD_WRONG   = 25;
+var GAME_4_ONLINE_DATA;
+var WORDS_PROBABILITY = 20;
+if (typeof callBackGame4 === 'undefined')
+	var callBackGame4 = null;
+
+if (typeof GAME_4_URL_SOURCE === 'undefined')
+	GAME_4_URL_SOURCE = "http://5.56.60.108/waliApi";
+
+if (typeof GAME_4_ID_USER === 'undefined')
+	GAME_4_ID_USER    = "399";
+
+if (typeof GAME_4_IDCOINT === 'undefined')
+	GAME_4_IDCOINT    = 0;
+
+if (typeof GAME_4_VERSION === 'undefined')
+	GAME_4_VERSION    = 3;
+
+var points_to_get_walinwos = GAME_4_POINTS_WALI_INCREASE;
+
+if(GAME_4_VERSION < 3)
+{
+	powerUp2.style.display = "none";
+	
+	if(GAME_4_VERSION < 2)
+	{
+		saveNet = false;
+		
+		if(GAME_4_VERSION < 1)
+		{
+			powerUp1.style.display = "none";
+		}
+	}
+}
+
+
+//WALINWA VARS************************
+
+var canvas = document.getElementById('canvas'),
+	ctx = canvas.getContext('2d');
+
+var height = canvas.offsetHeight;
+var width = canvas.offsetWidth;
+
+canvas.width = width;
+canvas.height = height;
+
+var lastX = null;
+var maxDistancePlatform = 150;
+//Variables for game
+var platforms = [],
+	image = document.getElementById("sprite"),
+	player,
+	position = 0,
+	gravity = 0.2,
+	animloop,
+	flag = 0,
+	menuloop, broken = 0,
+	dir, score = 0, firstRun = true;
+	
+	var platformCount;
+	
+	if( height > 900) 
+	{
+		platformCount = 18;
+	}
+	else if( height > 700) 
+	{
+		platformCount = 15;
+	}
+	else if ( height > 600) 
+	{
+		platformCount = 10;
+	}
+	else if ( height > 400) 
+	{
+		platformCount = 9;
+	}
+	else
+	{
+		platformCount = 6;
+	}
+
+	var widthPlatforms = 800;
+	var timePowerUp1 = 300;
+	var currentTimePowerUp1 = timePowerUp1;
+	var powerUp1Active = false;
+	
+	var timePowerUp2 = 600;
+	var currentTimePowerUp2 = timePowerUp2;
+	var powerUp2Active = false;
+	
+	var next_type_of_word = false;
+	var prev_type_of_word = false;
+	var count_same_type_word = 1;
+	var prev_type_of_word = false;
+	var count_same_type_word = 1;
+	var prev_is_word = false;
+	var prev_type = 0;
+	
+//Base object
+var Base = function() {
+	
+	//Sprite clipping
+	this.enable = true;
+	this.cx = 202;
+	this.cy = 5;
+	this.cwidth = 108;
+	this.cheight = 12;
+	
+	this.height = 12;
+	this.width = width;
+
+	this.moved = 0;
+
+	this.x = 0;
+	this.y = height - this.height;
+	
+	this.yScale = this.y / height;
+	
+	this.draw = function() {
+		try {
+			ctx.drawImage(image, this.cx, this.cy, this.cwidth, this.cheight, this.x, this.y, this.width, this.height);
+		} catch (e) {}
+	};
+};
+
+var base = new Base();
+
+//Player object
+var Player = function() {
+	this.vy = 11;
+	this.vx = 0;
+
+	this.isMovingLeft = false;
+	this.isMovingRight = false;
+	this.isDead = false;
+	
+	//Sprite clipping
+	this.cx = 0;
+	this.cy = 0;
+	this.cwidth = 71;
+	this.cheight = 82;
+
+	this.width = this.cwidth * 0.6;
+	this.height = this.cheight * 0.6;
+	
+	this.rocketEnable = false;
+	this.rocketState = 0;
+	this.rocketInterval;
+	
+	this.dir = "left";
+
+	this.x = width / 2 - this.width / 2;
+	this.y = height;
+	
+	this.xScale = this.x / width;
+
+	//Function to draw it
+	this.draw = function() {
+		try 
+		{
+			if(!this.rocketEnable)
+			{
+				if (this.dir == "right"){ this.cx = 397; this.cy = 95; }
+				else if (this.dir == "left"){ this.cx = 391; this.cy = 5; }
+				else if (this.dir == "right_land"){ this.cx = 326; this.cy = 95; }
+				else if (this.dir == "left_land"){ this.cx = 320; this.cy = 5; }				
+			}
+			else
+			{
+				if (this.dir == "right" || this.dir == "right_land")
+				{ 
+					if(this.rocketState == 0)
+					{
+						this.cx = 5;
+						this.cy = 127;
+					}
+					else
+					{
+						this.cx = 85;
+						this.cy = 127;						
+					}
+				}
+				else if (this.dir == "left" || this.dir == "left_land")
+				{ 
+					if(this.rocketState == 0)
+					{
+						this.cx = 5;
+						this.cy = 5;						
+					}
+					else
+					{
+						this.cx = 85;
+						this.cy = 5;					
+					}
+				}
+			}
+
+			ctx.drawImage(image, this.cx, this.cy, this.cwidth, this.cheight, this.x, this.y, this.width, this.height);
+			
+			if(width == canvas.offsetWidth)
+			{
+				this.xScale = this.x / width;
+				this.yScale = this.y / height;
+			}
+
+		} catch (e) {}
+	};
+
+	this.jump = function() {
+		this.vy = -8;
+	};
+
+	this.jumpHigh = function() {
+		this.vy = -12;
+	};
+	
+	this.jumpVeryHigh = function() {
+		this.vy = -17;
+		powerUp1Active = false;
+	};
+	
+	this.jumpVeryVeryHigh = function() {
+		this.vy = -24;
+		powerUp1Active = false;
+	};
+	
+	
+	this.Rocket_manager = function() 
+	{
+		player.rocketEnable = true;
+		player.rocketInterval = setInterval(function(){ player.rocketState = (player.rocketState == 1) ? 0 : 1;}, 50);
+		setTimeout( function(){ clearInterval( player.rocketInterval ); player.rocketEnable = false; player.cwidth = 71; player.cheight = 82; player.width = player.cwidth * 0.6; player.height = player.cheight * 0.6;}, 1500); 
+		
+		player.cwidth = 80;
+		player.cheight = 111;
+		player.width = player.cwidth * 0.6; 
+		player.height = player.cheight * 0.6;
+	};
+
+};
+
+player = new Player();
+
+//Platform class
+
+function randomNumberRange(min, max)
+{
+    return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function Platform() {
+	
+	
+	//Sprite clipping
+	this.cx = 179;
+	this.cy = 181;
+	this.cwidth = 107;
+	this.cheight = 32;
+	
+	this.limitNeg = 0;
+	this.limitPos = 0;
+	this.center = 0;
+	
+	this.limitNegScale = 0;
+	this.limitPosScale = 0;
+	
+	this.width = this.cwidth * 0.6;
+	this.height = this.cheight * 0.6;
+	
+	this.word = Get_word();
+	
+	if(!lastX)
+	{
+		this.x = Math.random() * (width - this.width);
+	}
+	else
+	{
+		var range_pos = lastX + maxDistancePlatform;
+		var range_neg = lastX - maxDistancePlatform;
+		
+		this.x = randomNumberRange(range_neg, range_pos);
+		
+		if(this.x < 0)
+			this.x = 10;
+		
+		else if((this.x + this.width) > width)
+		{
+			this.x = width - this.width;
+		}
+	}	
+
+	if(Math.abs(this.x - lastX) < (this.width * 0.4))
+	{
+		if(this.x + (this.width * 1.3) > width)
+			this.x -= this.width * 0.5;
+		else if(this.x - (this.width * 0.3) < 0)
+			this.x += this.width * 0.5;
+		else if(Math.random() > 0.5)
+			this.x += this.width * 0.5;
+		else	
+			this.x -= this.width * 0.5;
+	}
+	
+	
+	lastX = this.x;
+	
+	this.y = position;
+	
+	this.xScale = this.x / width;
+	this.yScale = this.y / height;
+	
+	position += (height / platformCount);
+
+	this.flag = 0;
+	this.state = 0;
+	
+	
+	if(this.word)
+	{
+		ctx.font = "bold " + 22 + "px Arial";
+		this.word.pos_X =  (this.width / 2) - (ctx.measureText(this.word.content).width / 2) ;// - ctx.measureText(this.word.content).width / 2 
+		
+		var outText = (ctx.measureText(this.word.content).width - this.width) / 2;
+		
+		if(this.x +  this.width + outText > width)
+		{
+			this.word.pos_X -= outText;
+		}
+		else if(this.x - outText < 0)
+		{
+			this.word.pos_X += outText;
+		}
+	}
+
+	//Function to draw it
+	this.draw = function() {
+		try {
+
+			if (this.type == 1)                         { this.cy = 181;    }
+			else if (this.type == 2)                    { this.cy = 139;    }
+			else if (this.type == 3 && this.flag === 0) { this.cy = 97;     }
+			else if (this.type == 3 && this.flag == 1)  { this.cy = 262;    }
+			else if (this.type == 4 && this.state === 0){ this.cy = 97;     }
+			else if (this.type == 4 && this.state == 1) { this.cy = 262;    }
+
+			ctx.drawImage(image, this.cx, this.cy, this.cwidth, this.cheight, this.x, this.y, this.width, this.height);
+			
+			if(this.word && this.word.interactible)
+				this.drawWord(this.word.content, this.x  + this.word.pos_X, this.y + this.word.pos_Y, this.word.color);
+			
+		} catch (e) {}
+	};
+	
+	this.drawWord = function(txt, x, y, color) 
+   {
+		ctx.font = "bold " + 22 + "px Arial";
+		ctx.fillStyle = color;
+
+		ctx.fillText(txt, x, y);
+		
+		ctx.fillStyle = "#828282";
+
+		ctx.strokeText(txt, x, y);
+		
+
+   };
+
+	//Platform types
+	//1: Normal
+	//2: Moving
+	//3: Breakable (Go through)
+	//4: Vanishable 
+	//Setting the probability of which type of platforms should be shown at what score
+    if (score >= 10000) this.types = [2, 2, 2, 2, 2, 4, 4];
+	else if (score >= 5000) this.types = [1, 2, 2, 2, 2, 4, 4, 4];
+	else if (score >= 2000 && score < 5000) this.types = [1, 2, 2, 2, 2, 4, 4, 4, 4];
+	else if (score >= 1000 && score < 2000) this.types = [1, 1, 2, 2, 2, 4, 4, 4];
+	else if (score >= 500 && score < 1000) this.types = [1, 1, 1, 1, 1, 2, 2, 2, 2];
+	else if (score >= 100 && score < 500) this.types = [1, 1, 1, 1, 2, 2];
+	else this.types = [1];
+
+	this.type = this.types[Math.floor(Math.random() * this.types.length)];
+	
+	if(prev_type == 2)
+		this.type = 1;
+	
+	prev_type = this.type;
+	
+	//We can't have two consecutive breakable platforms otherwise it will be impossible to reach another platform sometimes!
+	if (this.type == 3 && broken < 1) {
+		broken++;
+	} else if (this.type == 3 && broken >= 1) {
+		this.type = 1;
+		broken = 0;
+	}
+
+	this.moved = 0;
+	this.vx = 2;
+	
+	if(this.type == 2)
+	{
+		this.center = this.x;
+		
+		this.limitNeg = this.center - (maxDistancePlatform * 1.5);
+		
+		if(this.limitNeg < 0)
+			this.limitNeg = 0;
+		
+		this.limitPos = this.center + (maxDistancePlatform * 1.5);
+		
+		if(this.limitPos > width - this.width)
+			this.limitPos = width - (this.width * 2);
+		
+		
+		this.limitNegScale = this.limitNeg / width;
+		this.limitPosScale = this.limitPos / width;
+
+	}
+}
+
+for (i = 0; i < 5; i++) 
+{
+	words_get_from_server = Get_words();
+	
+	if(words_get_from_server)
+		break;
+}
+
+document.getElementById("loader").style.display = "none";
+document.getElementById("loaderScreen").display = "none";
+		
+document.getElementById("loader").style.zIndex = -10;	
+document.getElementById("loaderScreen").style.zIndex = -10;	
+
+for (var i = 0; i < platformCount; i++) {
+	platforms.push(new Platform());
+}
+platforms[0].word = null;
+//Broken platform object
+var Platform_broken_substitute = function() {
+	this.height = 30;
+	this.width = 70;
+
+	this.x = 0;
+	this.y = 0;
+
+	//Sprite clipping
+	this.cx = 0;
+	this.cy = 554;
+	this.cwidth = 105;
+	this.cheight = 60;
+
+	this.appearance = false;
+
+	this.draw = function() {
+		try {
+			if (this.appearance === true) ctx.drawImage(image, this.cx, this.cy, this.cwidth, this.cheight, this.x, this.y, this.width, this.height);
+			else return;
+		} catch (e) {}
+	};
+};
+
+var platform_broken_substitute = new Platform_broken_substitute();
+
+//Spring Class
+var spring = function() {
+	
+	//Sprite clipping
+	this.cx = 202;
+	this.cy = 27;
+	this.cwidth = 52;
+	this.cheight = 60;
+	
+	this.x = 0;
+	this.y = 0;
+
+	this.width = this.cwidth * 0.6;
+	this.height = this.cheight * 0.6;
+
+	this.state = 0;
+
+	this.draw = function() {
+		try {
+			if (this.state === 0) this.cx = 202;
+			else if (this.state == 1) this.cx = 254;
+			
+			ctx.drawImage(image, this.cx, this.cy, this.cwidth, this.cheight, this.x, this.y - 5, this.width , this.height);
+		} catch (e) {}
+	};
+};
+
+var Spring = new spring();
+
+function init() {
+
+	//Variables for the game
+	var	dir = "left",
+		jumpCount = 0;
+	
+	firstRun = false;
+
+	//Function for clearing canvas in each consecutive frame
+
+	function paintCanvas() {
+		ctx.clearRect(0, 0, width, height);
+	}
+
+	//Player related calculations and functions
+
+	function playerCalc() {
+		if (dir == "left") {
+			player.dir = "left";
+			if (player.vy < -7 && player.vy > -15) player.dir = "left_land";
+		} else if (dir == "right") {
+			player.dir = "right";
+			if (player.vy < -7 && player.vy > -15) player.dir = "right_land";
+		}
+
+		//Adding keyboard controls
+		document.onkeydown = function(e) {
+			var key = e.keyCode;
+			
+			if (key == 37) {
+				dir = "left";
+				player.isMovingLeft = true;
+			} else if (key == 39) {
+				dir = "right";
+				player.isMovingRight = true;
+			} 
+			else if (key == 16) //MAY
+			{
+				UsePowerUp2();
+			} 
+			else if (key == 17) //CONTR
+			{
+
+				UsePowerUp1();
+			}
+			
+			if(key == 32) {
+				if(firstRun === true)
+					init();
+				else 
+					reset();
+			}
+		};
+
+		document.onkeyup = function(e) {
+			var key = e.keyCode;
+		
+			if (key == 37) {
+				dir = "left";
+				player.isMovingLeft = false;
+			} else if (key == 39) {
+				dir = "right";
+				player.isMovingRight = false;
+			}
+		};
+
+	//Accelerations produces when the user hold the keys
+		if (player.isMovingLeft === true) {
+			player.x += player.vx;
+			player.vx -= 0.15;
+		} else {
+			player.x += player.vx;
+			if (player.vx < 0) player.vx += 0.1;
+		}
+
+
+		if (player.isMovingRight === true) 
+		{
+			player.x += player.vx;
+			player.vx += 0.15;
+		} else 
+		{
+			player.x += player.vx;
+			if (player.vx > 0) player.vx -= 0.1;
+		}
+
+		// Speed limits!
+		if(player.vx > 8)
+			player.vx = 8;
+		else if(player.vx < -8)
+			player.vx = -8;
+		
+		//console.log(player.vx);
+		
+		//Jump the player when it hits the base
+		if ((player.y + player.height) > base.y && base.y < height &&  base.enable) 
+		{
+			if(powerUp1Active) 
+			{
+				player.jumpVeryHigh(); 		
+				player.Rocket_manager();
+			}
+			else player.jump();
+		}
+		
+		if(GAME_4_VERSION < 2 && base.enable && (base.y) > height)
+		{
+			base.enable = false;
+		}
+
+
+		//Gameover if it hits the bottom 
+
+		if ((player.y + player.height) >= (height * 0.97) && player.isDead != "lol") 
+		{
+			
+			if(saveNet)
+			{					
+				if(powerUp1Active) 
+				{
+					player.jumpVeryHigh(); 		
+					player.Rocket_manager();
+				}
+				else player.jump();
+
+				
+				if(score > 30)
+				{
+					base.enable = false;
+					setTimeout(function(){saveNet = false;}, 1000); 
+				}
+
+			}
+			else if(score > 10)
+			{
+				player.isDead = true;
+			
+			}			
+		}
+
+			
+		//Make the player move through walls
+		if (player.x > width) player.x = 0 - player.width;
+		else if (player.x < 0 - player.width) player.x = width;
+
+		//Movement of player affected by gravity
+		if (player.y >= (height / 2) - (player.height / 2)) {
+			player.y += player.vy;
+			player.vy += gravity;
+		}
+
+		//When the player reaches half height, move the platforms to create the illusion of scrolling and recreate the platforms that are out of viewport...
+		else {
+			platforms.forEach(function(p, i) {
+				
+				platforms[i].yScale = platforms[i].y / (height * 0.6);
+
+				if (player.vy < 0) {
+					p.y -= player.vy;
+				}
+
+				if (p.y > height) {
+					platforms[i] = new Platform();
+					platforms[i].y = p.y - height;
+				}
+
+			});
+			
+			if(GAME_4_VERSION < 2)
+				base.y -= player.vy;
+			
+			player.vy += gravity;
+			
+			base.yScale = base.y / height;
+			
+			if (player.vy >= 0) {
+				player.y += player.vy;
+				player.vy += gravity;
+			}
+
+			score++;
+		}
+
+		//Make the player jump when it collides with platforms
+		collides();
+
+		if (player.isDead === true) gameOver();
+	}
+
+	//Spring algorithms
+
+	function springCalc() {
+		var s = Spring;
+		var p = platforms[0];
+
+		if (p.type == 1 || p.type == 2) {
+			s.x = p.x + p.width / 2 - s.width / 2;
+			s.y = p.y - p.height - 10;
+
+			if (s.y > height / 1.1) s.state = 0;
+
+			s.draw();
+		} else {
+			s.x = 0 - s.width;
+			s.y = 0 - s.height;
+		}
+	}
+
+	//Platform's horizontal movement (and falling) algo
+
+	function platformCalc() {
+		var subs = platform_broken_substitute;
+
+		platforms.forEach(function(p, i) {
+			if (p.type == 2) {
+				if (p.x < p.limitNeg || p.x + p.width > p.limitPos) p.vx *= -1;///MOvimiento plataformas+++++++++++++++
+
+				if(p.x < p.limitNeg)
+					p.x = p.limitNeg;
+				
+				else if(p.x + p.width > p.limitPos)
+					p.x = p.limitPos - p.width;
+				
+				if(!powerUp2Active)
+					p.x += p.vx;
+			}
+
+			 p.draw();
+		 });
+
+	}
+
+	function collides() {
+		//Platforms
+		platforms.forEach(function(p, i) {
+			if (player.vy > 0 && p.state === 0 && (player.x + 15 < p.x + p.width) && (player.x + player.width - 15 > p.x) && (player.y + player.height > p.y) && (player.y + player.height < p.y + p.height)) {
+				
+				var word = p.word;
+				
+				if(word && word.interactible)
+				{
+					word.interactible = false;
+					
+					if(word.is_correct)	
+					{
+						score += GAME_4_POINTS_PICK_WORD_CORRECT;	
+					}								
+					else
+					{
+						score -= GAME_4_POINTS_PICK_WORD_WRONG;
+
+						if(score < 0)
+							score = 0;
+					}
+					
+				}
+			
+			
+				if (p.type == 3 && p.flag === 0) 
+				{			
+					p.flag = 1;
+					
+					if(powerUp1Active) 
+					{	
+						player.jumpVeryHigh(); 
+						player.Rocket_manager();
+					}
+					else 
+						player.jump();
+					
+					return;
+				} 
+				else if (p.type == 4 && p.state === 0) 
+				{
+					if(powerUp1Active) 
+					{
+						player.jumpVeryHigh(); 
+						player.Rocket_manager();
+					}
+					else 
+						player.jump();
+					
+					p.state = 1;
+				} 
+				else if (p.flag == 1) 
+				{
+					return;
+				}
+				else 
+				{
+					if(powerUp1Active) 
+					{
+						player.jumpVeryHigh();
+						player.Rocket_manager();
+					}
+					else 
+						player.jump();
+				}
+			}
+		});
+
+		//Springs
+		var s = Spring;
+		if (player.vy > 0 && (s.state === 0) && (player.x + 15 < s.x + s.width) && (player.x + player.width - 15 > s.x) && (player.y + player.height > s.y) && (player.y + player.height < s.y + s.height)) 
+		{
+			
+			s.state = 1;
+			if(powerUp1Active)
+			{
+				player.jumpVeryVeryHigh();
+				player.Rocket_manager();
+			}
+			else
+				player.jumpHigh();
+		}
+
+	}
+
+	function updateScore() {
+		var scoreText = document.getElementById("score");
+		scoreText.innerHTML = score;
+		
+		
+		if(score > points_to_get_walinwos && GAME_4_WALIS < GAME_4_MAX_WALIS)
+		{
+			GAME_4_WALIS += GAME_4_WALIS_INCREASE;
+			document.getElementById("walinwasTxt").textContent = GAME_4_WALIS;
+
+			points_to_get_walinwos += GAME_4_POINTS_WALI_INCREASE;
+		}
+	}
+
+	function gameOver() {
+		platforms.forEach(function(p, i) {
+			p.y -= 12;
+		});
+
+		if(player.y > height/2 && flag === 0) {
+			player.y -= 8;
+			player.vy = 0;
+		} 
+		else if(player.y < height / 2) flag = 1;
+		else if(player.y + player.height > height) 
+		{
+			showGoMenu();
+			hideScore();
+			player.isDead = "lol";
+
+		}
+	}
+
+	//Function to update everything
+
+	function update() {
+		paintCanvas();
+		platformCalc();
+
+		springCalc();
+
+		playerCalc();
+		player.draw();
+		
+		if(base.enable)
+			base.draw();
+
+		updateScore();
+		
+		
+		if(currentTimePowerUp1 < timePowerUp1)
+		{
+			currentTimePowerUp1++;
+			
+			if(currentTimePowerUp1 >= timePowerUp1)
+			{
+				document.getElementById("powerUp1").style.WebkitFilter = "grayscale(0%)";
+			}
+		}
+		
+		if(currentTimePowerUp2 < timePowerUp2)
+		{
+			currentTimePowerUp2++;
+			
+			if(currentTimePowerUp2 >= timePowerUp2)
+			{
+				document.getElementById("powerUp2").style.WebkitFilter = "grayscale(0%)";
+			}
+		}
+	}
+
+	menuLoop = function(){return;};
+	animloop = function() {
+		update();
+		requestAnimFrame(animloop);
+
+	};
+
+	animloop();
+
+	showScore();
+}
+
+function reset() {
+	hideGoMenu();
+	showScore();
+	player.isDead = false;
+	
+	flag = 0;
+	position = 0;
+	score = 0;
+
+	base = new Base();
+	player = new Player();
+	Spring = new spring();
+	platform_broken_substitute = new Platform_broken_substitute();
+
+	platforms = [];
+	for (var i = 0; i < platformCount; i++) 
+	{
+		platforms.push(new Platform());
+	}
+	platforms[0].word = null;
+}
+
+
+//Shows the game over menu
+function showGoMenu() {
+
+     for (i = 0; i < 5; i++) 
+	{
+        if (Save_result(score)) 
+		{
+            break;
+        }
+    }
+     document.getElementById("end").innerHTML = "Has conseguido " + score + " puntos " + " <br/> " + "Has ganado " + GAME_4_WALIS + " walinwos" + " <br/> " +
+        "<button type='button' onclick='Quick_game(true)' id='buttonEnd'>Volver a jugar</button><button type='button' onclick='Quick_game(false)' id='buttonEnd2'>Finalizar</button>";
+		
+	document.getElementById("end").style.zIndex = 1;
+}
+
+//Show ScoreBoard
+function showScore() {
+	var menu = document.getElementById("scoreBoard");
+	menu.style.zIndex = 1;
+}
+
+//Hide ScoreBoard
+function hideScore() 
+{
+	document.getElementById("scoreBoard").style.zIndex = -10;	
+	document.getElementById("score").style.zIndex = -10;	
+	document.getElementById("powerUp1").style.zIndex = -10;	
+	document.getElementById("powerUp2").style.zIndex = -10;	
+	document.getElementById("walinwas").style.zIndex = -10;	
+	document.getElementById("words").style.zIndex = -10;	
+}
+
+function playerJump() {
+	player.y += player.vy;
+	player.vy += gravity;
+
+	if (dir == "left") {
+		player.dir = "left";
+		if (player.vy < -7 && player.vy > -15) player.dir = "left_land";
+	} else if (dir == "right") {
+		player.dir = "right";
+		if (player.vy < -7 && player.vy > -15) player.dir = "right_land";
+	}
+
+	//Adding keyboard controls
+	document.onkeydown = function(e) {
+		var key = e.keyCode;
+
+		if (key == 37) {
+			dir = "left";
+			player.isMovingLeft = true;
+		} else if (key == 39) {
+			dir = "right";
+			player.isMovingRight = true;
+		}
+	
+		if(key == 32) {
+			if(firstRun === true) {
+				init();
+				firstRun = false;
+			}
+			else 
+				reset();
+		}
+	};
+
+	document.onkeyup = function(e) {
+		var key = e.keyCode;
+
+		if (key == 37) {
+			dir = "left";
+			player.isMovingLeft = false;
+		} else if (key == 39) {
+			dir = "right";
+			player.isMovingRight = false;
+		}
+	};
+
+	//Accelerations produces when the user hold the keys
+	if (player.isMovingLeft === true) {
+		player.x += player.vx;
+		player.vx -= 0.15;
+	} else {
+		player.x += player.vx;
+		if (player.vx < 0) player.vx += 0.1;
+	}
+
+	if (player.isMovingRight === true) {
+		player.x += player.vx;
+		player.vx += 0.15;
+	} else {
+		player.x += player.vx;
+		if (player.vx > 0) player.vx -= 0.1;
+	}
+
+	//Jump the player when it hits the base
+	if ((player.y + player.height) > base.y && base.y < height && base.enable) 
+	{
+		if(powerUp1Active) 
+		{					
+			player.jumpVeryHigh(); 
+			player.Rocket_manager();
+		}
+		else 
+			player.jump();
+	}
+
+	//Make the player move through walls
+	if (player.x > width) player.x = 0 - player.width;
+	else if (player.x < 0 - player.width) player.x = width;
+
+	player.draw();
+}
+
+function update() {
+	ctx.clearRect(0, 0, width, height);
+	playerJump();
+}		
+
+function Quick_game(playAgain) {
+
+
+    if (playAgain) {
+        location.reload();
+    }else  if (callBackGame4 != null) 
+	{
+        window.setTimeout(callBackGame4, 500);
+    }
+}
+
+function Save_result(points) {
+    // Online data load  
+    var word_data_temp = null;
+    $.ajaxSetup({
+        async: false
+    })
+    var sent = false;
+    var date = new Date();
+    var moment = date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear() + "-" + date.getHours() + "-" + date.getMinutes() + "-" + date.getSeconds();
+
+    $.post(GAME_4_URL_SOURCE + "/api/game1/addScore/idUser/" + GAME_4_ID_USER + "/score/" + points + "/game/4/walis/" + GAME_4_WALIS + "/moment/" + moment, function (data) {
+        sent = true;
+    });       
+
+    return sent;
+}
+
+function UsePowerUp1() 
+{
+    if (currentTimePowerUp1 >= timePowerUp1 && GAME_4_VERSION >= 1)
+	{
+		currentTimePowerUp1 = 0;
+		document.getElementById("powerUp1").style.WebkitFilter = "grayscale(100%)";
+
+		powerUp1Active = true;
+		
+		setTimeout(function(){powerUp1Active = false;}, 2000); 
+	}
+}
+
+function UsePowerUp2() 
+{
+    if (currentTimePowerUp2 >= timePowerUp2 && GAME_4_VERSION >= 3)
+	{
+		currentTimePowerUp2 = 0;
+		document.getElementById("powerUp2").style.WebkitFilter = "grayscale(100%)";
+		
+        powerUp2Active = true;
+
+        setTimeout(function () { powerUp2Active = false; }, 5000); 
+	}
+}
+
+menuLoop = function() {
+	update();
+	requestAnimFrame(menuLoop);
+};
+
+menuLoop();
+init();
+
+
+window.addEventListener("resize", 
+	function()
+	{
+		height = canvas.offsetHeight;
+		width = canvas.offsetWidth;
+
+		canvas.width = width;
+		canvas.height = height;
+		
+		for(var i = 0; i < platforms.length; i++)
+		{
+			platforms[i].x = width * platforms[i].xScale;
+			platforms[i].y = height * platforms[i].yScale;
+			
+			platforms[i].limitNeg = width * platforms[i].limitNegScale;
+			platforms[i].limitPos = width * platforms[i].limitPosScale;
+		}		
+
+		player.x = width * player.xScale;		
+		player.y = height * player.yScale;	
+		
+		base.y = height * base.yScale;	
+	
+		base.width = width;
+		
+	}, false);
+	
+window.addEventListener("touchstart", 
+	function(evt)
+	{
+		var rect = canvas.getBoundingClientRect();
+
+		var touches = evt.changedTouches;
+
+		for (var i = 0; i < touches.length; i++) 
+		{
+			
+			if(touches[i].pageX < (width / 2))
+			{
+				dir = "left";
+				player.isMovingLeft = true;
+			}
+			else
+			{
+				dir = "right";
+				player.isMovingRight = true;
+			}
+			
+			is_inTouch = true;
+		}
+	}, false);	
+	
+window.addEventListener("touchend", 
+	function(evt)
+	{
+		player.isMovingLeft = false;
+		player.isMovingRight = false;
+	}, false);	
+
+
+powerUp1.addEventListener("touchstart", 
+	function(evt)
+	{
+		UsePowerUp1();
+	}, false);	
+		
+powerUp2.addEventListener("touchstart", 
+	function(evt)
+	{
+		UsePowerUp2();
+	}, false);	
+	
+	
+function Get_words() 
+{
+	// Online data load  
+	var word_data_temp = null;
+	$.ajaxSetup({
+		async: false
+	})
+	$.get(GAME_4_URL_SOURCE + "/api/game1/getwords/idUser/" + GAME_4_ID_USER + "/idGame/1", function (data) 
+	{
+		word_data_temp = JSON.parse(data);
+	});
+	GAME_4_ONLINE_DATA = word_data_temp;
+	
+	if (GAME_4_ONLINE_DATA != null)
+	{
+		palabras_Ok_legth = GAME_4_ONLINE_DATA.palabrasOk.length;
+		palabras_err_legth = GAME_4_ONLINE_DATA.palabrasErr.length;
+
+		Statement_paint(GAME_4_ONLINE_DATA.enunciado);
+		return true;
+	}
+	
+	return false;
+}
+
+function Get_Ok_word() 
+{	
+	var n = Math.floor(Math.random() * palabras_Ok_legth);
+	return GAME_4_ONLINE_DATA.palabrasOk[n];
+}
+
+function Get_wrong_word() 
+{	
+	var n = Math.floor(Math.random() * palabras_err_legth);
+	return GAME_4_ONLINE_DATA.palabrasErr[n];
+}
+
+function Create_word(type) 
+{
+	var _content = (type) ?  Get_Ok_word()  : Get_wrong_word();
+	var _num_leters = _content.length;
+	
+	var word =
+	{
+		is_correct: type,
+		content: _content, 
+		num_leters : _num_leters,
+		color : "rgb(254, 254, 254)",
+		pos_X : 0,
+		pos_Y : -6,
+		disable : false,
+		interactible : true,
+		life_time : 0
+	}
+	
+	return word;
+}
+
+function Get_word() 
+{
+	if(!prev_is_word && GAME_4_ONLINE_DATA  && (Math.random() * 100 < WORDS_PROBABILITY))
+	{
+		next_type_of_word = (Math.random() * 100 < 50) ? true : false;
+		
+		if(prev_type_of_word == next_type_of_word)
+		{
+			if(count_same_type_word >= 3)
+			{
+				count_same_type_word = 1;
+				next_type_of_word = !next_type_of_word;
+			}
+			
+			count_same_type_word++;
+		}
+		else
+		{
+			count_same_type_word = 1;
+		}
+		
+		prev_type_of_word = next_type_of_word;
+		prev_is_word = true;
+		
+		return Create_word(next_type_of_word);
+	}
+	
+	prev_is_word = false;
+	return null;
+}

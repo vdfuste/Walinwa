@@ -1,0 +1,9 @@
+ARREGLAR/CAMBIAR:
+-Que las palabras correctas e incorrectas en el enunciado también pinten de verde o rojo la preposición. ej: "hache" => "con hache".
+
+
+
+
+AÑADIR:
+-Guardar y enviar datos.
+-Que el personaje parpadee al ser herido.

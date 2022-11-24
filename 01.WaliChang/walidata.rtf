@@ -1,0 +1,53 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
+{\fonttbl\f0\froman\fcharset0 Times-Roman;\f1\fswiss\fcharset0 Helvetica;\f2\fmodern\fcharset0 Courier;
+}
+{\colortbl;\red255\green255\blue255;\red26\green26\blue26;\red16\green60\blue192;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww30240\viewh20360\viewkind0
+\deftab720
+\pard\pardeftab720\sa200
+
+\f0\fs38 \cf2 Hola, V\'edctor.
+\f1 \
+
+\f0 Est\'e1s son las variables que tendr\'e1s que leer directamente de la pagina donde yo meter\'e9 el juego.
+\f1 \
+
+\f0 GAME_5_URL_SOURCE -> Url base a la que deber\'e1s llamar para hacer las peticiones. (Ej.\'a0{\field{\*\fldinst{HYPERLINK "http://dev.walinwa.net/waliApi"}}{\fldrslt \cf3 \ul \ulc3 http://dev.walinwa.net/waliApi}})
+\f1 \
+
+\f0 GAME_5_ID_USER -> Id del usuario (Ej. 4869)
+\f1 \
+
+\f0 GAME_5_VERSION -> Versi\'f3n del pang que debes arrancar, 0 la b\'e1sica, 1 la primera expansi\'f3n, etc... (Ej. 0)
+\f1 \
+
+\f0 callBackGame5 -> funci\'f3n de callback.
+\f1 \
+
+\f0 Las urls ser\'edan las siguientes.
+\f1 \
+
+\f0 Para obtener palabras:\'a0 GAME_5_URL_SOURCE + "/api/game1/getWords/idUser/" + GAME_5_ID_USER + "/idGame/1"\'a0
+\f1 \
+
+\f0 Ej.\'a0\'a0{\field{\*\fldinst{HYPERLINK "http://dev.walinwa.net/waliApi/api/game1/getWords/idUser/4869/idGame/1"}}{\fldrslt \cf3 \ul \ulc3 http://dev.walinwa.net/waliApi/api/game1/getWords/idUser/4869/idGame/1}}\'a0(manten el idGame a 1, para obtener palabras no afecta)
+\f1 \
+
+\f0 Para guardar: GAME_1_URL_SOURCE + "/api/game1/addScore/idUser/" + GAME_5_ID_USER + "/Score/" + GAME_5_SCORE.toString() + "/game/5/walis/" + GAME_5_WALIS.toString() + "/moment/" + moment;
+\f1 \
+
+\f0 Donde\'a0GAME_5_SCORE son los puntos obtenidos,\'a0GAME_5_WALIS son las monedas obtenidas (m\'e1x 50) y\'a0moment es\'a0
+\b var moment = date.getDate() + "-" + (date.getMonth() + 1) + "-" + date.getFullYear() + "-" + date.getHours() + "-" + date.getMinutes() + "-" + date.getSeconds();
+\f1\b0 \
+
+\f0 Ej.\'a0{\field{\*\fldinst{HYPERLINK "http://dev.walinwa.net/waliApi/api/game1/addScore/idUser/4869/Score/0/game/5/walis/0/moment/30-12-2018-11-22-3"}}{\fldrslt 
+\f2\fs42 \cf3 \ul \ulc3 http://dev.walinwa.net/waliApi/api/game1/addScore/idUser/4869/Score/0/game/5/walis/0/moment/30-12-2018-11-22-3}}
+\f1 \
+
+\f0 Estas ser\'edan las \'fanicas 2 llamadas necesarias para integrar el juego.\'a0 Una vez finalizada la partida y habiendo guardado el resultado, se permite volver a jugar directamente o volver al men\'fa. El primer caso solo tienes que volver a iniciar el juego en el segundo llamar a la funci\'f3n de callback.
+\f1 \
+
+\f0 Si tienes cualquier duda me dices.
+\f1 \
+
+\f0 Un saludo y feliz a\'f1o nuevo.}

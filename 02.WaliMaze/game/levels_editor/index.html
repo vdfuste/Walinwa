@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <title>WaliPang</title>
+        <meta name="description" content="Pang-Like Game in JS">
+        <meta name="author" content="Víctor Dual">
+        <style>
+            body {
+                margin: 0px;
+                width: 100%;
+                height: 100%;
+                position: absolute;
+            }
+            .center {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            .button {
+                background:#12d04d;
+                margin:12px;
+                padding:16px;
+                border-radius:12px;
+                color:white;
+                font:18pt Arial;
+            }
+        </style>
+    </head>
+
+    <body class="center" style="background-color:#b4b4b8;">
+
+        <canvas id="canvas" width="640" height="480" style="background-color:white"></canvas>
+        
+        <div style="margin-top: 32px">
+            <!--a id="load-maze" class="button" href="" target="_blank">Load Maze!</a-->
+            <a id="save-maze" class="button" href="" target="_blank">Save in a file!</a>
+        </div>
+
+        <script type="text/javascript" src="../Game.js"></script>
+		<script type="text/javascript" src="TileEditor.js"></script>
+
+    </body>
+</html>
