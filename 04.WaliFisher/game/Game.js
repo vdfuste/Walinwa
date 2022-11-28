@@ -406,19 +406,19 @@ const game = {
 				rect1.pos.y * game.screen.scale <= (rect2.pos.y + rect2.height) * game.screen.scale;
 		},
 		checkColCircles: function (circle1, circle2) {
-			return game.math.pointsDistance(circle1.pos, circle2.pos) * game.screen.scale <= (circle1.rad + circle2.rad) * game.screen.scale ? true : false;
+			return game.math.pointsDistance(circle1.pos, circle2.pos) * game.screen.scale <= (circle1.rad + circle2.rad) * game.screen.scale;
 		},
 		checkColCircleRect: function (circle, rect) {
 			return false;
 		},
 		checkColPointRect: function (point, rect) {
-			return point.x * game.screen.scal >= rect.pos.x * game.screen.scale &&
-				point.x * game.screen.scal <= (rect.pos.x + rect.width) * game.screen.scale &&
-				point.y * game.screen.scal >= rect.pos.y * game.screen.scale &&
-				point.y * game.screen.scal <= (rect.pos.y + rect.height) * game.screen.scale;
+			return point.x * game.screen.scale >= rect.pos.x * game.screen.scale &&
+				point.x * game.screen.scale <= (rect.pos.x + rect.width) * game.screen.scale &&
+				point.y * game.screen.scale >= rect.pos.y * game.screen.scale &&
+				point.y * game.screen.scale <= (rect.pos.y + rect.height) * game.screen.scale;
 		},
 		checkColPointCircle: function (point, circle) {
-			return game.math.hypotenuse(circle.x - point.x, circle.y - point.y) * game.screen.scale <= circle.rad * game.screen.scale;
+			return game.math.hypotenuse(circle.pos.x - point.x, circle.pos.y - point.y) * game.screen.scale <= circle.rad * game.screen.scale;
 		}
 	},
 	debug: {
