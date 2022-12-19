@@ -114,18 +114,23 @@ class Player extends DrawableObject {
 
 				switch (this.hook.state) {
 					case HookState.ROLL_UP:
-						if (this.hook.bottom.y <= MIN_HEIGHT_HOOK) this.state = PlayerState.CHECKING;
+						if (this.hook.bottom.y <= MIN_HEIGHT_HOOK) {
+							this.state = PlayerState.CHECKING;
+							this.hook.powerUpActivated = false;
+						}
 
 						// Check penguin collision
-						for (let i = 0; i < fishes.length; i++) {
-							if (fishes[i].type === FishType.PENGUIN && fishes[i].isHooked(this.hook)) {
-								lifes--;
-
-								this.hook.fishHooked = null;
-								this.hook.state = HookState.DAMAGE;
-								this.damage = false;
-
-								i = fishes.length;
+						if(!this.hook.powerUpActivated) {
+							for (let i = 0; i < fishes.length; i++) {
+								if (fishes[i].type === FishType.PENGUIN && fishes[i].isHooked(this.hook)) {
+									lifes--;
+	
+									this.hook.fishHooked = null;
+									this.hook.state = HookState.DAMAGE;
+									this.damage = false;
+	
+									i = fishes.length;
+								}
 							}
 						}
 
@@ -265,6 +270,7 @@ class Hook extends ColliderObject {
 		this.bottom = new Point(x, MIN_HEIGHT_HOOK);
 		this.state = HookState.ROLL_DOWN;
 		this.speed = 5;
+		this.powerUpActivated = false;
 
 		this.rotation = 0;
 		this.rotateTo = 0;
@@ -284,7 +290,12 @@ class Hook extends ColliderObject {
 			case HookState.ROLL_UP:
 
 				// Up and down hook movement
-				if (this.isDown()) {
+				if(this.powerUpActivated) {
+					if (this.bottom.y > MIN_HEIGHT_HOOK - 10) {
+						this.bottom.y -= 10;
+					}
+				}
+				else if (this.isDown()) {
 					// Up movement
 					let _speed = this.speed;
 
@@ -677,11 +688,17 @@ const saveData = () => {
 };
 
 const powerUpCallback = () => {
+	fishes.forEach(fish => {
+		if(fish.direction === 1 && fish.pos.x < screenWidth/2 ||
+		fish.direction === -1 && fish.pos.x > screenWidth/2) fish.direction *= -1;
+	});
+
 	console.log("Power!")
 };
 
 const uniquePowerUpCallback = () => {
-	
+	player.hook.powerUpActivated = true;
+	console.log("Unique!")
 };
 //#endregion
 

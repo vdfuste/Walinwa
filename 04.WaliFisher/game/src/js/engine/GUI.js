@@ -11,6 +11,9 @@ const printDescription = text => get("description").innerHTML = text;
 let powerUpPressed = false;
 let uniquePowerUpPressed = false;
 
+let powerUpUsed = false;
+let uniquePowerUpUsed = false;
+
 const coolDownSecs = 10;
 
 
@@ -21,22 +24,6 @@ const drawLifes = () => {
 			game.draw.imageRegionR(atlasTexture, new Rect(30 + 48*i, 100, 42, 54), new Rect(1500, 100, 83, 108));
 };
 
-const showPowerUpButtons = () => {
-	if(GAME_5_VERSION >= 2) {
-		powerUpButton.addEventListener("click", () => powerUpPressed = true);
-
-		show(powerUpButton.id);
-		setActive(powerUpButton.id);
-	}
-
-	if(GAME_5_VERSION == 3) {
-		uniquePowerUpButton.addEventListener("click", () => uniquePowerUpPressed = true);
-
-		show(uniquePowerUpButton.id);
-		setActive(uniquePowerUpButton.id);
-	}
-};
-
 const showGameOverPopUp = () => {
 	get("game-over-coins-text").innerHTML = GAME_5_WALIS;
 	get("game-over-points-text").innerHTML = GAME_5_SCORE;
@@ -45,29 +32,49 @@ const showGameOverPopUp = () => {
 
 
 // EVENT LISTENERS
+const powerUpEvent = () => powerUpPressed = true;
+const uniquePowerUpEvent = () => uniquePowerUpPressed = true;
+
+const showPowerUpButtons = () => {
+	if(GAME_5_VERSION >= 2) {
+		powerUpButton.addEventListener("click", powerUpEvent);
+
+		show(powerUpButton.id);
+		setActive(powerUpButton.id);
+	}
+
+	if(GAME_5_VERSION == 3) {
+		uniquePowerUpButton.addEventListener("click", uniquePowerUpEvent);
+
+		show(uniquePowerUpButton.id);
+		setActive(uniquePowerUpButton.id);
+	}
+};
+
 const powerUpListener = () => {
-	if(powerUpPressed || game.inputs.keypad.isKeyPress(game.utils.keycode.ctrl)) {
+	if(!powerUpUsed && (powerUpPressed || game.inputs.keypad.isKeyPress(game.utils.keycode.ctrl))) {
 		powerUpCallback();
 		setActive(powerUpButton.id, false);
 		
 		setTimeout(() => {
-			powerUpButton.addEventListener("click", () => powerUpPressed = true);
+			powerUpButton.addEventListener("click", powerUpEvent);
 			setActive(powerUpButton.id, true);
+			powerUpUsed = false;
 		}, coolDownSecs * 1000);
 
-		powerUpButton.replaceWith(powerUpButton.cloneNode(true));
-		powerUpButton = get("power-up-button");
 		
+		powerUpButton.removeEventListener("click", powerUpEvent);
 		powerUpPressed = false;
+		powerUpUsed = true;
 	}
 };
 const uniquePowerUpListener = () => {
-	if(uniquePowerUpPressed || game.inputs.keypad.isKeyPress(game.utils.keycode.shift)) {
+	if(!uniquePowerUpUsed && (uniquePowerUpPressed || game.inputs.keypad.isKeyPress(game.utils.keycode.shift))) {
 		uniquePowerUpCallback();
 		setActive(uniquePowerUpButton.id, false);
 
-		uniquePowerUpButton.replaceWith(uniquePowerUpButton.cloneNode(true));
-		uniquePowerUpPressed = false;
+		uniquePowerUpButton.removeEventListener("click", uniquePowerUpEvent);
+		uniquePowerUpUsed = true;
 	}
 };
 
