@@ -2,20 +2,18 @@ const game = {
 	engine: {
 		fps: 60,
 		loop: function () {
-			game.screen.canvas.width = game.screen.width * game.screen.scale;
-			game.screen.canvas.height = game.screen.height * game.screen.scale;
+			game.screen.canvas.width = game.screen.width;
+			game.screen.canvas.height = game.screen.height;
 			game.screen.canvas.style.backgroundColor = game.screen.background;
 			game.screen.canvas.style.cursor = game.inputs.mouse.overButton ? game.utils.mouseIcons.default : game.inputs.mouse.icon;
 			game.inputs.mouse.overButton = false;
 
-			game.screen.screenScale();
-
 			game.update();
-			game.debug.update();
+			//game.debug.update();
 
 			game.screen.clear();
 			game.canvas();
-			game.debug.canvas();
+			//game.debug.canvas();
 
 			game.inputs.mouse.clearClickPress();
 			game.inputs.keypad.clearKeyPress();
@@ -25,7 +23,7 @@ const game = {
 			game.inputs.keypad.listener();
 
 			game.init();
-			game.debug.init();
+			//game.debug.init();
 
 			document.title = game.title;
 
@@ -39,35 +37,22 @@ const game = {
 	screen: {
 		width: 720,
 		height: 480,
-		scale: 1.0,
-		screenAdapt: true,
 		background: "white",
 		canvas: document.getElementById("canvas"),
 		context: this.canvas.getContext("2d"),
 		style: this.canvas.style,
-		clear: function (x, y, width, height) {
-			if (x != null) this.context.clearRect(x, y, width, height);
-			else this.context.clearRect(0, 0, this.width, this.height);
+		clear: function () {
+			this.context.clearRect(0, 0, this.width, this.height);
 		},
-		screenScale: function () {
-			if (this.screenAdapt) {
-				const _x = window.innerWidth / this.width < 1 ? window.innerWidth / this.width : 1;
-				const _y = window.innerHeight / this.height < 1 ? window.innerHeight / this.height : 1;
-
-				if (_x < _y) this.scale = _x;
-				else if (_y < _x) this.scale = _y;
-				else this.scale = 1;
-			}
-		}
 	},
 	draw: {
 		circle: function (x, y, rad, faces = 32, color = "#ABCDEF") {
 			game.screen.context.fillStyle = color;
 			game.screen.context.beginPath();
-			game.screen.context.moveTo((x + rad) * game.screen.scale, y * game.screen.scale);
+			game.screen.context.moveTo((x + rad), y);
 			for (let i = 1; i < faces; i++) {
 				let a = 360 / faces;
-				game.screen.context.lineTo((x + Math.cos(game.math.toRadians(a * i)) * rad) * game.screen.scale, (y + Math.sin(game.math.toRadians(a * i)) * rad) * game.screen.scale);
+				game.screen.context.lineTo((x + Math.cos(game.math.toRadians(a * i)) * rad), (y + Math.sin(game.math.toRadians(a * i)) * rad));
 			}
 			game.screen.context.closePath();
 			game.screen.context.fill();
@@ -79,10 +64,10 @@ const game = {
 			game.screen.context.strokeStyle = color;
 			game.screen.context.strokeWidth = strokeWidth;
 			game.screen.context.beginPath();
-			game.screen.context.moveTo((x + rad) * game.screen.scale, y * game.screen.scale);
+			game.screen.context.moveTo((x + rad), y);
 			for (let i = 1; i < faces; i++) {
 				let a = 360 / faces;
-				game.screen.context.lineTo((x + Math.cos(game.math.toRadians(a * i)) * rad) * game.screen.scale, (y + Math.sin(game.math.toRadians(a * i)) * rad) * game.screen.scale);
+				game.screen.context.lineTo((x + Math.cos(game.math.toRadians(a * i)) * rad), (y + Math.sin(game.math.toRadians(a * i)) * rad));
 			}
 			game.screen.context.closePath();
 			game.screen.context.stroke();
@@ -124,8 +109,8 @@ const game = {
 			game.screen.context.strokeStyle = color;
 			game.screen.context.lineWidth = lineWidth;
 			game.screen.context.beginPath();
-			game.screen.context.moveTo(x1 * game.screen.scale, y1 * game.screen.scale);
-			game.screen.context.lineTo(x2 * game.screen.scale, y2 * game.screen.scale);
+			game.screen.context.moveTo(x1, y1);
+			game.screen.context.lineTo(x2, y2);
 			game.screen.context.stroke();
 		},
 		lineP: function (p1, p2, lineWidth, color) {
@@ -133,7 +118,7 @@ const game = {
 		},
 		rect: function (x, y, width, height, color = "tomato") {
 			game.screen.context.fillStyle = color;
-			game.screen.context.fillRect(x * game.screen.scale, y * game.screen.scale, width * game.screen.scale, height * game.screen.scale);
+			game.screen.context.fillRect(x, y, width, height);
 		},
 		rectR: function (rect, color = "tomato") {
 			game.draw.rect(rect.pos.x, rect.pos.y, rect.width, rect.height, color);
@@ -141,7 +126,7 @@ const game = {
 		rectLine: function (x, y, width, height, strokeWidth = 1, color = "tomato") {
 			game.screen.context.strokeStyle = color;
 			game.screen.context.strokeWidth = strokeWidth;
-			game.screen.context.strokeRect(x * game.screen.scale, y * game.screen.scale, width * game.screen.scale, height * game.screen.scale);
+			game.screen.context.strokeRect(x, y, width, height);
 		},
 		rectLineR: function (rect, strokeWidth, color) {
 			game.draw.rectLine(rect.pos.x, rect.pos.y, rect.width, rect.height);
@@ -155,9 +140,9 @@ const game = {
 		poly: function (polygon, color) {
 			game.screen.context.fillStyle = color != null ? color : "tomato";
 			game.screen.context.beginPath();
-			game.screen.context.moveTo(polygon.points[0].x * game.screen.scale, polygon.points[0].y * game.screen.scale);
+			game.screen.context.moveTo(polygon.points[0].x, polygon.points[0].y);
 			for (let i = 1; i < polygon.points.length; i++) {
-				game.screen.context.lineTo(polygon.points[i].x * game.screen.scale, polygon.points[i].y * game.screen.scale);
+				game.screen.context.lineTo(polygon.points[i].x, polygon.points[i].y);
 			}
 			game.screen.context.closePath();
 			game.screen.context.fill();
@@ -165,41 +150,31 @@ const game = {
 		polyLine: function (polygon, strokeWidth, color) {
 			game.screen.context.strokeStyle = color != null ? color : "tomato";
 			game.screen.context.beginPath();
-			game.screen.context.moveTo(polygon.points[0].x * game.screen.scale, polygon.points[0].y * game.screen.scale);
+			game.screen.context.moveTo(polygon.points[0].x, polygon.points[0].y);
 			for (let i = 1; i < polygon.points.length; i++) {
-				game.screen.context.lineTo(polygon.points[i].x * game.screen.scale, polygon.points[i].y * game.screen.scale);
+				game.screen.context.lineTo(polygon.points[i].x, polygon.points[i].y);
 			}
 			game.screen.context.closePath();
 			game.screen.context.stroke();
 		},
 		text: function (text, x, y, size = 12, color = "black", align = "left") {
-			let _size = size * game.screen.scale;
+			let _size = size;
 			game.screen.context.font = `${_size}px Arial`;
-			//game.screen.context.font = _size + "px Arial";
 			game.screen.context.textAlign = align;
 			game.screen.context.fillStyle = color;
-			game.screen.context.fillText(text, x * game.screen.scale, y * game.screen.scale);
+			game.screen.context.fillText(text, x, y);
 			if (game.debug.debugMode) {
 				game.draw.rectLine(x, y - _size, game.utils.textWidth(text) / game.screen.scale, _size, "tomato");
 				game.draw.cross(x, y, 16);
 			}
 		},
-		textColor: function (text, x, y, size, defaultColor, arrayColor, align) {
-			let _x = x;
-			let _n = 0;
-			for (let i = 0; i < text.length; i++) {
-				game.draw.text(text[i], _x, y, size, arrayColor[_n][0] == i ? arrayColor[_n][1] : defaultColor, align);
-				_x += game.utils.textWidth(text[i]);
-				if (_n < arrayColor.length - 1 && arrayColor[_n][0] == i) _n++;
-			}
-		},
 		image: function (texture, x, y, width, height, flipX) {
 			if (flipX) {
-				game.screen.context.translate((x + width) * game.screen.scale, y * game.screen.scale);
+				game.screen.context.translate((x + width), y);
 				game.screen.context.scale(-1, 1);
 			}
-			if (width == null || height == null) game.screen.context.drawImage(texture, !flipX ? x * game.screen.scale : 0, !flipX ? y * game.screen.scale : 0);
-			else game.screen.context.drawImage(texture, !flipX ? x * game.screen.scale : 0, !flipX ? y * game.screen.scale : 0, width * game.screen.scale, height * game.screen.scale);
+			if (width == null || height == null) game.screen.context.drawImage(texture, !flipX ? x : 0, !flipX ? y : 0);
+			else game.screen.context.drawImage(texture, !flipX ? x : 0, !flipX ? y : 0, width, height);
 			if (flipX) game.screen.context.setTransform(1, 0, 0, 1, 0, 0);
 		},
 		imageR: function (texture, rect, flipX) {
@@ -207,10 +182,10 @@ const game = {
 		},
 		imageRegion: function (texture, x, y, width, height, imgX, imgY, imgWidth, imgHeight, flipX) {
 			if (flipX) {
-				game.screen.context.translate((x + width) * game.screen.scale, y * game.screen.scale);
+				game.screen.context.translate((x + width), y);
 				game.screen.context.scale(-1, 1);
 			}
-			game.screen.context.drawImage(texture, imgX, imgY, imgWidth, imgHeight, !flipX ? x * game.screen.scale : 0, !flipX ? y * game.screen.scale : 0, width * game.screen.scale, height * game.screen.scale);
+			game.screen.context.drawImage(texture, imgX, imgY, imgWidth, imgHeight, !flipX ? x : 0, !flipX ? y : 0, width, height);
 			if (flipX) game.screen.context.setTransform(1, 0, 0, 1, 0, 0);
 		},
 		imageRegionR: function (texture, rect, rectImg, flipX) {
@@ -222,7 +197,7 @@ const game = {
 
 			let _degrees = game.math.toRadians(degrees);
 
-			game.screen.context.translate((x - width * Math.cos(_degrees) - height * Math.cos(_degrees + 90)) * game.screen.scale, (y - width * Math.sin(_degrees) - height * Math.sin(_degrees + 90)) * game.screen.scale);
+			game.screen.context.translate((x - width * Math.cos(_degrees) - height * Math.cos(_degrees + 90)), (y - width * Math.sin(_degrees) - height * Math.sin(_degrees + 90)));
 
 			game.screen.context.rotate(_degrees);
 		},
@@ -232,9 +207,9 @@ const game = {
 	},
 	files: {
 		filesPath: "./",
-		imagesPath: "images/",
-		fontsPath: "fonts/",
-		soundsPath: "sounds/",
+		imagesPath: "/src/images/",
+		fontsPath: "/src/fonts/",
+		soundsPath: "/src/sounds/",
 		createTexture: function (path) {
 			let img = new Image();
 			img.src = this.imagesPath + path;
@@ -367,10 +342,10 @@ const game = {
 				this.mouseIsPressed[0] = false;
 			},
 			checkColMouseRect: function (rect) {
-				return this.pos.x >= rect.pos.x * game.screen.scale &&
-					this.pos.x <= (rect.pos.x + rect.width) * game.screen.scale &&
-					this.pos.y >= rect.pos.y * game.screen.scale &&
-					this.pos.y <= (rect.pos.y + rect.height) * game.screen.scale;
+				return this.pos.x >= rect.pos.x &&
+					this.pos.x <= (rect.pos.x + rect.width) &&
+					this.pos.y >= rect.pos.y &&
+					this.pos.y <= (rect.pos.y + rect.height);
 			}
 		}
 	},
@@ -400,32 +375,29 @@ const game = {
 	},
 	physics: {
 		checkColRectangles: function (rect1, rect2) {
-			return (rect1.pos.x + rect1.width) * game.screen.scale >= rect2.pos.x * game.screen.scale &&
-				rect1.pos.x * game.screen.scale <= (rect2.pos.x + rect2.width) * game.screen.scale &&
-				(rect1.pos.y + rect1.height) * game.screen.scale >= rect2.pos.y * game.screen.scale &&
-				rect1.pos.y * game.screen.scale <= (rect2.pos.y + rect2.height) * game.screen.scale;
+			return (rect1.pos.x + rect1.width) >= rect2.pos.x &&
+				rect1.pos.x <= (rect2.pos.x + rect2.width) &&
+				(rect1.pos.y + rect1.height) >= rect2.pos.y &&
+				rect1.pos.y <= (rect2.pos.y + rect2.height);
 		},
 		checkColCircles: function (circle1, circle2) {
-			return game.math.pointsDistance(circle1.pos, circle2.pos) * game.screen.scale <= (circle1.rad + circle2.rad) * game.screen.scale;
+			return game.math.pointsDistance(circle1.pos, circle2.pos) <= (circle1.rad + circle2.rad);
 		},
 		checkColCircleRect: function (circle, rect) {
 			return false;
 		},
 		checkColPointRect: function (point, rect) {
-			return point.x * game.screen.scale >= rect.pos.x * game.screen.scale &&
-				point.x * game.screen.scale <= (rect.pos.x + rect.width) * game.screen.scale &&
-				point.y * game.screen.scale >= rect.pos.y * game.screen.scale &&
-				point.y * game.screen.scale <= (rect.pos.y + rect.height) * game.screen.scale;
+			return point.x >= rect.pos.x &&
+				point.x <= (rect.pos.x + rect.width) &&
+				point.y >= rect.pos.y &&
+				point.y <= (rect.pos.y + rect.height);
 		},
 		checkColPointCircle: function (point, circle) {
-			return game.math.hypotenuse(circle.pos.x - point.x, circle.pos.y - point.y) * game.screen.scale <= circle.rad * game.screen.scale;
+			return game.math.hypotenuse(circle.pos.x - point.x, circle.pos.y - point.y) <= circle.rad;
 		}
 	},
 	debug: {
 		debugMode: false,
-		init: function () { },
-		update: function () { },
-		canvas: function () { }
 	},
 	utils: {
 
