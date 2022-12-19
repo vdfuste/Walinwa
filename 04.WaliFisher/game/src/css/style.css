@@ -119,10 +119,10 @@ body {
 
 	background-image: url("../images/atlas.png");
 	background-position-y: 0px;
-	cursor: pointer;
 }
 .game-wrapper .gui .buttons .button.active {
 	background-position-y: -128px;
+	cursor: pointer;
 }
 .game-wrapper .gui .buttons .button.visible {
 	display: inherit;

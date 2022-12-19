@@ -25,7 +25,6 @@ const points = 10;
 let lifes = 3;
 let play = true;
 let streak = 0;
-let panicButtonUsed = false;
 let relayCounter = 0;
 
 const MIN_HEIGHT_HOOK = 250;
@@ -39,16 +38,6 @@ let incorrectWordPointer = parseInt(Math.random() * WORDS.incorrects.length);
 
 // ATLAS TEXTURE
 const atlasTexture = game.files.createTexture("atlas.png");
-
-
-// GUI
-let btnRelayState = 0;
-let btnPanicState = 0;
-const btnSize = 128;
-const btnRelay = new Button("", new Rect(10, screenHeight - btnSize - 4, btnSize, btnSize), game.files.createTexture("slowBtn_spr.png"));
-const btnPanic = new Button("", new Rect(screenWidth - btnSize - 10, screenHeight - btnSize - 4, btnSize, btnSize), game.files.createTexture("panicBtn_spr.png"));
-const btnPlayAgain = new Button("Volver a jugar", new Rect(screenWidth / 2 - 230 - 5, 450, 230, 60), "#c7a670");
-const btnCloseGame = new Button("Finalizar", new Rect(screenWidth / 2 + 5, 450, 230, 60), "#c7a670");
 //#endregion
 
 //#region CLASSES & ENUMS
@@ -686,6 +675,14 @@ const saveData = () => {
 
 	game.http.request("POST", _data, true);
 };
+
+const powerUpCallback = () => {
+	console.log("Power!")
+};
+
+const uniquePowerUpCallback = () => {
+	
+};
 //#endregion
 
 
@@ -724,25 +721,28 @@ game.update = () => {
 	if(play) {
 		if(lifes === 0) {
 			play = false;
-			show("game-over");
+			showGameOverPopUp();
 			return;
 		}
 		
 		if(GAME_5_VERSION >= 2) {
-			if (relayCounter > 0) relayCounter--;
-			else {
-				if (game.inputs.keypad.isKeyPress(game.utils.keycode.ctrl) || btnRelay.isClick()) {
+			powerUpListener();
+			// if (relayCounter > 0) relayCounter--;
+			// else {
+			// 	if (game.inputs.keypad.isKeyPress(game.utils.keycode.ctrl) || btnRelay.isClick()) {
 
-				}
-				else btnRelayState = 0;
-			}
+			// 	}
+			// 	else btnRelayState = 0;
+			// }
 		}
 		if(GAME_5_VERSION == 3) {
-			if (!panicButtonUsed && (game.inputs.keypad.isKeyPress(game.utils.keycode.shift) || btnPanic.isClick())) {
-				totalBubbles = 0;
-				btnPanicState = 1;
-				panicButtonUsed = true;
-			}
+			uniquePowerUpListener();
+			
+			// if (!panicButtonUsed && (game.inputs.keypad.isKeyPress(game.utils.keycode.shift) || btnPanic.isClick())) {
+			// 	totalBubbles = 0;
+			// 	btnPanicState = 1;
+			// 	panicButtonUsed = true;
+			// }
 		}
 
 		// GAME LOGIC HERE
@@ -753,10 +753,6 @@ game.update = () => {
 
 		bubbles.loop("update");
 	}
-	// else {
-	// 	if (btnPlayAgain.isClick()) game.engine.reset();
-	// 	if (btnCloseGame.isClick()) callBackGame5();
-	// }
 }
 game.canvas = () => {
 	background.draw();
