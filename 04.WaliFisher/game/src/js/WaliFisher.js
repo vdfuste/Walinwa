@@ -2,7 +2,7 @@
 // SERVER
 const GAME_5_URL_SOURCE = "http://dev.walinwa.net/waliApi";
 const GAME_5_ID_USER = 9684;
-const GAME_5_VERSION = 3;
+const GAME_5_VERSION = 0;
 
 let GAME_5_SCORE = 0;
 let GAME_5_WALIS = 0;
@@ -22,10 +22,10 @@ const screenWidth = 1280;
 const screenHeight = 720;
 const speedAnimation = 4;
 const points = 10;
-let lifes = 3;
+let lifes = GAME_5_VERSION === 0 ? 1 : 3;
 let play = true;
-let streak = 0;
 let relayCounter = 0;
+let globalSpeed = 1;
 
 const MIN_HEIGHT_HOOK = 250;
 const MAX_HEIGHT_HOOK = screenHeight - 50;
@@ -76,7 +76,7 @@ class Player extends DrawableObject {
 				
 				// Check if there is any target, if not the target is assigned
 				if(this.target === null) {
-					this.setNewTarget();
+					//this.setNewTarget();
 
 					// Reset
 					this.state = PlayerState.FISHING;
@@ -93,7 +93,7 @@ class Player extends DrawableObject {
 						updateCoins(GAME_5_WALIS);
 					}
 
-					this.setNewTarget();
+					//this.setNewTarget();
 
 					// Check if there is any fish to catch, if not the state change to BONUS
 					if(this.target !== "bonus") {
@@ -107,6 +107,9 @@ class Player extends DrawableObject {
 						console.log("BONUS");
 					}
 				}
+
+				this.setNewTarget();
+				if(globalSpeed < 3.5) globalSpeed += 0.1;
 
 				break;
 			case PlayerState.FISHING:
@@ -303,7 +306,7 @@ class Hook extends ColliderObject {
 				}
 				else if (this.isDown()) {
 					// Up movement
-					let _speed = this.speed;
+					let _speed = this.speed * (globalSpeed * 0.75);
 
 					// The bigger the fish, the slower the movement
 					switch (this.fishHooked.type) {
@@ -319,7 +322,7 @@ class Hook extends ColliderObject {
 				}
 				else {
 					// Down movement
-					if (this.bottom.y < MAX_HEIGHT_HOOK + this.speed) {
+					if (this.bottom.y < MAX_HEIGHT_HOOK + this.speed * (globalSpeed * 0.75)) {
 						this.bottom.y += this.speed;
 					}
 				}
@@ -331,16 +334,16 @@ class Hook extends ColliderObject {
 				// Up and down hook movement
 				if (this.isDown()) {
 					// Down movement
-					if (this.bottom.y < MAX_HEIGHT_HOOK + this.speed) {
-						this.bottom.y += this.speed;
+					if (this.bottom.y < MAX_HEIGHT_HOOK + this.speed * (globalSpeed * 0.5)) {
+						this.bottom.y += this.speed * (globalSpeed * 0.5);
 						this.rotateTo = 90;
 					}
 					else this.rotateTo = 0;
 				}
 				else {
 					// Up movement
-					if (this.bottom.y > MIN_HEIGHT_HOOK - this.speed) {
-						this.bottom.y -= this.speed;
+					if (this.bottom.y > MIN_HEIGHT_HOOK - this.speed * (globalSpeed * 0.5)) {
+						this.bottom.y -= this.speed * (globalSpeed * 0.5);
 						this.rotateTo = -30;
 					}
 					else this.rotateTo = 0;
@@ -466,7 +469,7 @@ class Fish extends ColliderObject {
 
 	update() {
 		// Movement
-		this.pos.x += 4 * this.direction;
+		this.pos.x += 4 * this.direction * globalSpeed;
 		this.pos.y = this.y + Math.sin(this.t * (180 * Math.PI) / 10) * 5;
 		this.t += 0.001;
 
