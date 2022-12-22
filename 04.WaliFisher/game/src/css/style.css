@@ -93,12 +93,13 @@ body {
 	color: white;
 }
 .game-wrapper .gui .coins .coin {
+	/* width: 3.451vw; */
+	/* height: 3.451vw; */
 	width: 48px;
 	height: 48px;
 
-	background-image: url("../images/coin.png");
-	background-position: 0px 0px;
-	background-size: 48px 48px;
+	background-image: url("../images/atlas.png");
+	background-position: -1400px -1900px;
 }
 
 .game-wrapper .gui .buttons {
@@ -115,23 +116,48 @@ body {
 	height: 128px;
 	margin: 8px;
 
+	position: relative;
 	display: none;
 
 	background-image: url("../images/atlas.png");
-	background-position-y: 0px;
+	background-position-y: 128px;
+
+	filter: grayscale(100%);
 }
 .game-wrapper .gui .buttons .button.active {
-	background-position-y: -128px;
+	filter: grayscale(0%);
 	cursor: pointer;
 }
 .game-wrapper .gui .buttons .button.visible {
 	display: inherit;
 }
 .game-wrapper .gui .buttons #power-up-button {
-	background-position-x: -100px;
+	background-position-x: 256px;
+}
+.game-wrapper .gui .buttons #power-up-button::after {
+	content: "";
+	width: 100%;
+	height: 50%;
+
+	position: absolute;
+	bottom: 0px;
+
+	background-image: url("../images/atlas.png");
+	background-position: 256px 195px;
 }
 .game-wrapper .gui .buttons #unique-power-up-button {
-	background-position-x: -200px;
+	background-position-x: 128px;
+}
+.game-wrapper .gui .buttons #unique-power-up-button::after {
+	content: "";
+	width: 100%;
+	height: 50%;
+
+	position: absolute;
+	bottom: 0px;
+	
+	background-image: url("../images/atlas.png");
+	background-position: 128px 195px;
 }
 
 .game-wrapper .gui #game-over {
@@ -144,7 +170,10 @@ body {
 	text-shadow: 2px 2px 1px black;
 	color: white;
 
-	background-color: lightskyblue;
+	background-image: url("../images/atlas.png");
+	/* background-position: -1280px 720px; */
+	background-position: 34.286em 32.1em;
+	background-size: 91.41em;
 }
 .game-wrapper .gui #game-over.visible {
 	display: grid;
@@ -173,7 +202,8 @@ body {
 
 	text-align: center;
 	font-size: 1.5em;
-	border: 1px solid;
+	border: 2px solid;
 
+	background-color: lightskyblue;
 	cursor: pointer;
 }
