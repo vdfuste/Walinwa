@@ -127,7 +127,9 @@ class Player extends DrawableObject {
 	
 									this.hook.fishHooked = null;
 									this.hook.state = HookState.DAMAGE;
-									this.damage = false;
+									//this.damage = false;
+
+									this.setNewTarget();
 	
 									i = fishes.length;
 								}
@@ -152,7 +154,7 @@ class Player extends DrawableObject {
 									
 									this.hook.fishHooked = null;
 									this.hook.state = HookState.DAMAGE;
-									this.damage = false;
+									//this.damage = false;
 									return;
 								}
 								
@@ -170,10 +172,14 @@ class Player extends DrawableObject {
 						break;
 					case HookState.DAMAGE:
 						if(!this.damage) {
+							console.log("Damage!!!!")
+
 							setTimeout(() => {
 								this.hook.state = HookState.ROLL_DOWN;
-								this.damage = true;
+								this.damage = false;
 							}, 1000);
+
+							this.damage = true;
 						}
 				}
 
@@ -591,7 +597,7 @@ class Background {
 
 	draw() {
 		// Background
-		game.draw.imageRegionR(atlasTexture, new Rect(0, 0, screenWidth, this.height), new Rect(0, 934, screenWidth, this.height));
+		game.draw.imageRegionR(atlasTexture, new Rect(0, 0, screenWidth, this.height), new Rect(0, 1328, screenWidth, this.height));
 
 		// Waves
 		game.draw.imageRegionR(atlasTexture, new Rect(0, this.height - 62, screenWidth, 65), new Rect(0, 1855 + (65 * this.frame.overflow(3)), 1280, 65));
@@ -634,7 +640,8 @@ const types = [
 ];
 let typesPointer = Math.floor(Math.random() * (types.length/4)) * 4;
 const getFishType = () => {
-	//console.log(types[typesPointer])
+	if(typesPointer === types.length) typesPointer = 0;
+	
 	switch (types[typesPointer++]) {
 		default:
 		case 0: return FishType.SMALL;
