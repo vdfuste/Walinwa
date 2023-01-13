@@ -34,7 +34,7 @@ const axisYRotationBubbles = screenHeight/2 + 100;
 const radiusRotationBubbles = 150;
 let correctWordPointer = parseInt(Math.random() * WORDS.corrects.length);
 let incorrectWordPointer = parseInt(Math.random() * WORDS.incorrects.length);
-
+let bubblesPointer = 0;
 
 // ATLAS TEXTURE
 const atlasTexture = game.files.createTexture("atlas.png");
@@ -93,7 +93,7 @@ class Player extends DrawableObject {
 						updateCoins(GAME_5_WALIS);
 					}
 
-					//this.setNewTarget();
+					this.setNewTarget();
 
 					// Check if there is any fish to catch, if not the state change to BONUS
 					if(this.target !== "bonus") {
@@ -141,11 +141,11 @@ class Player extends DrawableObject {
 
 						break;
 					case HookState.ROLL_DOWN:
-						// Check if any bubble is touched
-						for(let i = 0; i < bubbles.length; i++) {
-							if(bubbles[i].touched(this.hook.bottom)) {
-								GAME_5_SCORE += bubbles[i].correct ? 100 : -50;
-								bubbles[i].visible = false;
+						// Check if any bonus bubble is touched 
+						for(let i = 0; i < bonusBubbles.length; i++) {
+							if(bonusBubbles[i].touched(this.hook.bottom)) {
+								GAME_5_SCORE += bonusBubbles[i].correct ? 100 : -50;
+								bonusBubbles[i].visible = false;
 							}
 						}
 					
@@ -184,6 +184,20 @@ class Player extends DrawableObject {
 
 							this.damage = true;
 						}
+
+						break;
+				}
+
+				// Check if any regular bubble is touched
+				for(let i = 0; i < bubbles.length; i++) {
+					if(bubbles[i].touched(this.hook.bottom)) {
+						bubbles[i].visible = false;
+						
+						GAME_5_SCORE += bubbles[i].correct ? 50 : -10;
+						if(GAME_5_SCORE < 0) GAME_5_SCORE = 0;
+						
+						updateScore(GAME_5_SCORE);
+					}
 				}
 
 				// Animation stuff
@@ -200,18 +214,18 @@ class Player extends DrawableObject {
 				break;
 			case PlayerState.BONUS:
 				
-				bubbles = [
-					new Bubble(screenHeight + 100, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true),
-					new Bubble(screenHeight + 200, WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)], false),
-					new Bubble(screenHeight + 300, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true),
-					new Bubble(screenHeight + 400, WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)], false),
-					new Bubble(screenHeight + 500, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true),
-					new Bubble(screenHeight + 600, WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)], false),
-					new Bubble(screenHeight + 700, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true),
+				bonusBubbles = [
+					new Bubble(screenHeight + 100, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true, true),
+					new Bubble(screenHeight + 200, WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)], false, true),
+					new Bubble(screenHeight + 300, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true, true),
+					new Bubble(screenHeight + 400, WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)], false, true),
+					new Bubble(screenHeight + 500, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true, true),
+					new Bubble(screenHeight + 600, WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)], false, true),
+					new Bubble(screenHeight + 700, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true, true),
 				];
 
 				setTimeout(() => {
-					bubbles = [];
+					bonusBubbles = [];
 
 					for (let i = 0; i < fishes.length; i++) {
 						const x = -200;
@@ -221,6 +235,8 @@ class Player extends DrawableObject {
 					
 						fishes[i] = new Fish(x, y, type, direction);
 					}
+
+					this.setNewTarget();
 				}, 15000);
 
 				this.state = PlayerState.FISHING;
@@ -542,26 +558,43 @@ class MiniBubble extends DrawableObject {
 }
 
 class Bubble extends ColliderObject {
-	constructor(y, text, correct) {
+	constructor(y, text, correct, bonus=false) {
 		super(new Rect(screenWidth/2 - 50, y, 100, 100), new Rect(1600, 12, 210, 210));
 		this.rotating = false;
 		this.rotation = 0;
 		this.text = text;
 		this.correct = correct;
 		this.visible = true;
+		this.bonus = bonus;
+		this.posY = 0;
+
+		this.direction = Math.random() > 0.5 ? 1 : -1;
+		if(!bonus) {
+			this.pos.x = this.direction === 1 ? -200 : screenWidth + 200;
+			this.pos.y = Math.random() * (MAX_HEIGHT_HOOK - MIN_HEIGHT_HOOK) + MIN_HEIGHT_HOOK;
+			this.posY = this.pos.y;
+		}
 	}
 
 	update() {
 		if(this.visible) {
-			if(!this.rotating) {
-				if(this.pos.y > axisYRotationBubbles + radiusRotationBubbles) this.pos.y -= 2;
-				else this.rotating = true;
+			if(this.bonus) {
+				if(!this.rotating) {
+					if(this.pos.y > axisYRotationBubbles + radiusRotationBubbles) this.pos.y -= 2;
+					else this.rotating = true;
+				}
+				else {
+					this.rotation++;
+		
+					this.pos.x = screenWidth/2 - 50 + (Math.cos(game.math.toRadians(this.rotation - 90)) * radiusRotationBubbles * 1.2);
+					this.pos.y = axisYRotationBubbles + (Math.sin(game.math.toRadians(this.rotation + 90)) * radiusRotationBubbles);
+				}
 			}
 			else {
-				this.rotation++;
-	
-				this.pos.x = screenWidth/2 - 50 + (Math.cos(game.math.toRadians(this.rotation - 90)) * radiusRotationBubbles * 1.2);
-				this.pos.y = axisYRotationBubbles + (Math.sin(game.math.toRadians(this.rotation + 90)) * radiusRotationBubbles);
+				this.pos.x += 2 * this.direction * globalSpeed;
+				this.pos.y = this.posY + Math.sin(game.math.toRadians(this.rotation++)) * 30;
+
+				if(this.pos.x < -300 || this.pos.x > screenWidth + 300) this.visible = false;
 			}
 		}
 	}
@@ -667,6 +700,14 @@ const addMiniBubble = (x, y, velX, velY) => {
 	miniBubbles.push(new MiniBubble(x, y, velX, velY));
 };
 
+const handleAddBubblesInterval = () => {
+	const _correct = Math.random() > 0.5;
+	const _word = _correct ?
+		WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)] :
+		WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)];
+	bubbles[(bubblesPointer++).overflow(3)] = new Bubble(-1000, _word, _correct);
+};
+
 // Coins & Score
 const recalculateCoins = () => {
 	GAME_5_WALIS = GAME_5_WALIS < 50 ? Math.floor(GAME_5_SCORE / (250)) : 50;
@@ -719,7 +760,8 @@ const fishes = new Array(4);
 const miniBubbles = [];
 const background = new Background();
 
-let bubbles = [];
+const bubbles = [];
+let bonusBubbles = [];
 
 for (let i = 0; i < fishes.length; i++) {
 	const x = -200;
@@ -743,6 +785,8 @@ game.init = () => {
 
 	updateScore(0);
 	updateCoins(0);
+
+	setInterval(handleAddBubblesInterval, 6 * 1000);
 }
 game.update = () => {
 	if(play) {
@@ -779,6 +823,7 @@ game.update = () => {
 		background.update();
 
 		bubbles.loop("update");
+		bonusBubbles.loop("update");
 	}
 }
 game.canvas = () => {
@@ -789,6 +834,7 @@ game.canvas = () => {
 	player.draw();
 
 	bubbles.loop("draw");
+	bonusBubbles.loop("draw");
 
 	drawLifes();
 }
