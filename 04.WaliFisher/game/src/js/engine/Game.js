@@ -207,7 +207,7 @@ const game = {
 	},
 	files: {
 		filesPath: "./",
-		imagesPath: "/src/images/",
+		imagesPath: "/game/src/images/",
 		fontsPath: "/src/fonts/",
 		soundsPath: "/src/sounds/",
 		createTexture: function (path) {

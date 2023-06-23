@@ -22,7 +22,7 @@ const screenWidth = 1280;
 const screenHeight = 720;
 const speedAnimation = 4;
 const points = 10;
-let lifes = GAME_5_VERSION === 0 ? 1 : 3;
+let lifes = GAME_5_VERSION === 0 ? 2 : 5;
 let play = true;
 let relayCounter = 0;
 let globalSpeed = 1;
@@ -30,14 +30,14 @@ let globalSpeed = 1;
 const MIN_HEIGHT_HOOK = 250;
 const MAX_HEIGHT_HOOK = screenHeight - 50;
 
-const axisYRotationBubbles = screenHeight/2 + 100;
+const axisYRotationBubbles = screenHeight / 2 + 100;
 const radiusRotationBubbles = 150;
 let correctWordPointer = parseInt(Math.random() * WORDS.corrects.length);
 let incorrectWordPointer = parseInt(Math.random() * WORDS.incorrects.length);
 let bubblesPointer = 0;
 
 // ATLAS TEXTURE
-const atlasTexture = game.files.createTexture("atlas.png");
+const atlasTexture = game.files.createTexture("atlas_v2.png");
 //#endregion
 
 //#region CLASSES & ENUMS
@@ -60,22 +60,23 @@ const FishType = {
 
 class Player extends DrawableObject {
 	constructor() {
-		super(new Rect(830, 10, 187, 184), new Rect(0, 0, 187, 184));
+		super(new Rect(830, 0, 230, 198), new Rect(0, 0, 230, 198));
 		this.endLine = new Point(screenWidth / 2, 200);
 		this.hook = new Hook(this.endLine.x, this.endLine.y + 70, null);
+		this.hand = new Hand();
 		this.state = PlayerState.CHECKING;
 		this.target = null;
 		this.frame = 0;
-		this.counter = 0;
+		//this.counter = 0;
 		this.damage = false;
 	}
 
 	update() {
 		switch (this.state) {
 			case PlayerState.CHECKING:
-				
+
 				// Check if there is any target, if not the target is assigned
-				if(this.target === null) {
+				if (this.target === null) {
 					//this.setNewTarget();
 
 					// Reset
@@ -85,7 +86,7 @@ class Player extends DrawableObject {
 				}
 				else {
 					// Check if the hooked fish is the same as the target
-					if(this.target === this.hook.fishHooked.type) {
+					if (this.target === this.hook.fishHooked.type) {
 						GAME_5_SCORE += this.hook.fishHooked.score;
 						recalculateCoins();
 
@@ -96,7 +97,7 @@ class Player extends DrawableObject {
 					this.setNewTarget();
 
 					// Check if there is any fish to catch, if not the state change to BONUS
-					if(this.target !== "bonus") {
+					if (this.target !== "bonus") {
 						// Reset
 						this.state = PlayerState.FISHING;
 						this.hook.state = HookState.ROLL_DOWN;
@@ -109,7 +110,10 @@ class Player extends DrawableObject {
 				}
 
 				this.setNewTarget();
-				if(globalSpeed < 3.5) globalSpeed += 0.1;
+				if (globalSpeed < 3.5) globalSpeed += 0.1;
+
+				// Change the frame to the first one
+				this.imgRect.pos.x = 0;
 
 				break;
 			case PlayerState.FISHING:
@@ -120,20 +124,34 @@ class Player extends DrawableObject {
 						if (this.hook.bottom.y <= MIN_HEIGHT_HOOK) {
 							this.state = PlayerState.CHECKING;
 							this.hook.powerUpActivated = false;
+
+							// Change the frame to the first one
+							this.imgRect.pos.x = 0;
+							this.hand.center = new Point(900, 125);
 						}
 
+						// Hand animation
+						let speed = this.hook.fishHooked.type === FishType.BIG ? 2.5 : (this.hook.fishHooked.type === FishType.MEDIUM ? 1.7 : 1);
+						this.hand.spin(this.hook.isDown() ? -1 : 0, speed);
+
 						// Check penguin collision
-						if(!this.hook.powerUpActivated) {
+						if (!this.hook.powerUpActivated) {
 							for (let i = 0; i < fishes.length; i++) {
 								if (fishes[i].type === FishType.PENGUIN && fishes[i].isHooked(this.hook)) {
 									lifes--;
-	
+
+									fishes[i].eatFish();
+
 									this.hook.fishHooked = null;
 									this.hook.state = HookState.DAMAGE;
 									//this.damage = false;
 
+									// Change the frame to the first one
+									this.imgRect.pos.x = 0;
+									this.hand.center = new Point(900, 125);
+
 									this.setNewTarget();
-	
+
 									i = fishes.length;
 								}
 							}
@@ -142,28 +160,44 @@ class Player extends DrawableObject {
 						break;
 					case HookState.ROLL_DOWN:
 						// Check if any bonus bubble is touched 
-						for(let i = 0; i < bonusBubbles.length; i++) {
-							if(bonusBubbles[i].touched(this.hook.bottom)) {
+						for (let i = 0; i < bonusBubbles.length; i++) {
+							if (bonusBubbles[i].touched(this.hook.bottom)) {
 								GAME_5_SCORE += bonusBubbles[i].correct ? 100 : -50;
 								bonusBubbles[i].visible = false;
 							}
 						}
-					
+
+						// Hand animation
+						if (this.hook.bottom.y > MIN_HEIGHT_HOOK)
+							this.hand.spin(this.hook.isDown() ? 1 : -1);
+
 						// Check if any fish is hooked
 						for (let i = 0; i < fishes.length; i++) {
 							if (fishes[i].isHooked(this.hook)) {
-								if(fishes[i].type === FishType.PENGUIN) {
+								if (fishes[i].type === FishType.PENGUIN) {
 									lifes--;
-									
+
 									this.hook.fishHooked = null;
 									this.hook.state = HookState.DAMAGE;
 									//this.damage = false;
 									return;
 								}
-								
+
 								// Save the hooked fish
 								this.hook.fishHooked = fishes[i];
 								this.hook.state = HookState.ROLL_UP;
+
+								// Change the frame based on the type of the fish
+								switch (this.hook.fishHooked.type) {
+									case FishType.MEDIUM:
+										this.imgRect.pos.x = 230 * 1;
+										this.hand.center = new Point(920, 90);
+										break;
+									case FishType.BIG:
+										this.imgRect.pos.x = 230 * 2;
+										this.hand.center = new Point(945, 90);
+										break;
+								}
 
 								// Add a new fish
 								addNewFish(i);
@@ -174,7 +208,7 @@ class Player extends DrawableObject {
 
 						break;
 					case HookState.DAMAGE:
-						if(!this.damage) {
+						if (!this.damage) {
 							console.log("Damage!!!!")
 
 							setTimeout(() => {
@@ -189,31 +223,20 @@ class Player extends DrawableObject {
 				}
 
 				// Check if any regular bubble is touched
-				for(let i = 0; i < bubbles.length; i++) {
-					if(bubbles[i].touched(this.hook.bottom)) {
+				for (let i = 0; i < bubbles.length; i++) {
+					if (bubbles[i].touched(this.hook.bottom)) {
 						bubbles[i].visible = false;
-						
+
 						GAME_5_SCORE += bubbles[i].correct ? 50 : -10;
-						if(GAME_5_SCORE < 0) GAME_5_SCORE = 0;
-						
+						if (GAME_5_SCORE < 0) GAME_5_SCORE = 0;
+
 						updateScore(GAME_5_SCORE);
 					}
 				}
 
-				// Animation stuff
-				if (this.counter++ === 4) {
-					if (game.inputs.mouse.isMouseDown()) {
-						this.imgRect.pos.x = 187 * this.frame;
-						this.frame++;
-						if (this.frame === 8) this.frame = 0;
-					}
-
-					this.counter = 0;
-				}
-
 				break;
 			case PlayerState.BONUS:
-				
+
 				bonusBubbles = [
 					new Bubble(screenHeight + 100, WORDS.corrects[(++correctWordPointer).overflow(WORDS.corrects.length)], true, true),
 					new Bubble(screenHeight + 200, WORDS.incorrects[(++incorrectWordPointer).overflow(WORDS.incorrects.length)], false, true),
@@ -232,7 +255,7 @@ class Player extends DrawableObject {
 						const y = 300 + 100 * i;
 						const type = getFishType();
 						const direction = i % 2 == 0 ? 1 : -1;
-					
+
 						fishes[i] = new Fish(x, y, type, direction);
 					}
 
@@ -248,15 +271,16 @@ class Player extends DrawableObject {
 	}
 
 	draw() {
+		this.hand.draw(atlasTexture);
 		super.draw(atlasTexture);
-		
+
 		// Draw Thread and Hook
-		game.draw.line(this.endLine.x, this.endLine.y, 837, 20, 2);
+		game.draw.line(this.endLine.x, this.endLine.y, 837, 25, 2);
 		this.hook.draw();
 
 		// Draw Target Dialog
 		game.draw.imageRegionR(atlasTexture, new Rect(1020, 70, 240, 177), new Rect(1579, 268, 240, 177));
-		switch(this.target) {
+		switch (this.target) {
 			case FishType.SMALL:
 				game.draw.imageRegionR(atlasTexture, new Rect(1100, 100, 90, 110), new Rect(90, 350, 90, 110));
 				break;
@@ -272,19 +296,37 @@ class Player extends DrawableObject {
 	setNewTarget() {
 		const availableTargets = [];
 
-		for(let i = 0; i < fishes.length; i++) {
-			if(fishes[i].type !== FishType.PENGUIN) availableTargets.push(fishes[i].type);
+		for (let i = 0; i < fishes.length; i++) {
+			if (fishes[i].type !== FishType.PENGUIN) availableTargets.push(fishes[i].type);
 		}
 
-		if(availableTargets.length === 0) {
+		if (availableTargets.length === 0) {
 			this.target = "bonus";
 			return;
 		}
-		
+
 		const nextTarget = Math.floor(Math.random() * availableTargets.length);
 		const nextType = availableTargets[nextTarget];
-		
+
 		this.target = nextType;
+	}
+}
+
+class Hand extends DrawableObject {
+	constructor() {
+		super(new Rect(0, 0, 56, 45), new Rect(750, 0, 56, 45));
+		this.center = new Point(900, 125);
+		this.time = 180;
+		this.radius = 8;
+
+		this.spin(1);
+	}
+
+	spin(direction, speed = 1) {
+		this.pos.x = this.center.x + Math.cos(game.math.toRadians(this.time)) * this.radius;
+		this.pos.y = this.center.y + Math.sin(game.math.toRadians(this.time)) * this.radius;
+
+		this.time -= 10 * speed * direction;
 	}
 }
 
@@ -302,20 +344,20 @@ class Hook extends ColliderObject {
 		this.speedRotation = 10;
 
 		this.fishHooked = null;
-		this.isUp = false;
+		//this.isUp = false;
 		this.bubblesCounter = 0;
 
 		this.counter = 0;
 	}
 
 	update() {
-		if (!this.isDown() && this.bottom.y > screenHeight - 72) this.up = true;
+		//this.isUp = true;
 
 		switch (this.state) {
 			case HookState.ROLL_UP:
 
 				// Up and down hook movement
-				if(this.powerUpActivated) {
+				if (this.powerUpActivated) {
 					if (this.bottom.y > MIN_HEIGHT_HOOK - 10) {
 						this.bottom.y -= 10;
 					}
@@ -414,7 +456,7 @@ class Hook extends ColliderObject {
 	draw() {
 		game.draw.line(this.top.x, this.top.y, this.bottom.x, this.bottom.y + 4, 2);
 
-		if(this.state !== HookState.DAMAGE) {
+		if (this.state !== HookState.DAMAGE) {
 
 			if (this.fishHooked === null) {
 				game.draw.rotate(this.bottom.x, this.bottom.y, 30, 6, this.rotation);
@@ -428,13 +470,13 @@ class Hook extends ColliderObject {
 			}
 		}
 		else {
-			if(this.counter++ % 2 === 0) {
+			if (this.counter++ % 2 === 0) {
 				game.draw.rotate(this.bottom.x, this.bottom.y, 30, 6, this.rotation);
 				super.draw(atlasTexture);
 				game.draw.stopRotate();
 			}
 		}
-			
+
 		//game.draw.rectLineR(this.getCollider());
 		//game.draw.rect(this.bottom.x, this.bottom.y, 12, 12)
 	}
@@ -471,6 +513,7 @@ class Fish extends ColliderObject {
 				super(new Rect(x, y, 280, 134), new Rect(0, 650, 280, 134));
 				this.collider = new Rect(32, 32, 200, 64);
 				this.score = -50;
+				this.eating = false;
 				break;
 		}
 
@@ -498,10 +541,31 @@ class Fish extends ColliderObject {
 		}
 
 		// Animation
-		if (this.animCounter++ === 8) {
-			this.imgRect.pos.x = this.imgRect.width * this.frame++;
-			if (this.frame === 4) this.frame = 0;
-			this.animCounter = 0;
+		if (this.eating && this.type === FishType.PENGUIN) {
+			if (this.animCounter++ === 8) {
+				this.imgRect.pos.x = this.imgRect.width * this.frame++;
+
+
+				if (this.frame === 4) {
+					this.eating = false;
+					this.frame = 0;
+
+					this.pos.x += 60;
+					this.pos.y += 250;
+					this.width = 280;
+					this.height = 134;
+					this.imgRect = new Rect(0, 650, this.width, this.height);
+				}
+
+				this.animCounter = 0;
+			}
+		}
+		else {
+			if (this.animCounter++ === 8) {
+				this.imgRect.pos.x = this.imgRect.width * this.frame++;
+				if (this.frame === 4) this.frame = 0;
+				this.animCounter = 0;
+			}
 		}
 
 		// Bubbles
@@ -518,6 +582,18 @@ class Fish extends ColliderObject {
 
 	isHooked(hook) {
 		return game.physics.checkColRectangles(this.getCollider(), hook.getCollider());
+	}
+
+	eatFish() {
+		this.eating = true;
+		this.animCounter = 0;
+		this.frame = 0;
+
+		this.pos.x -= 60;
+		this.pos.y -= 250;
+		this.width = 400;
+		this.height = 230;
+		this.imgRect = new Rect(0, 784, this.width, this.height);
 	}
 }
 
@@ -558,8 +634,8 @@ class MiniBubble extends DrawableObject {
 }
 
 class Bubble extends ColliderObject {
-	constructor(y, text, correct, bonus=false) {
-		super(new Rect(screenWidth/2 - 50, y, 100, 100), new Rect(1600, 12, 210, 210));
+	constructor(y, text, correct, bonus = false) {
+		super(new Rect(screenWidth / 2 - 50, y, 100, 100), new Rect(1600, 12, 210, 210));
 		this.rotating = false;
 		this.rotation = 0;
 		this.text = text;
@@ -569,7 +645,7 @@ class Bubble extends ColliderObject {
 		this.posY = 0;
 
 		this.direction = Math.random() > 0.5 ? 1 : -1;
-		if(!bonus) {
+		if (!bonus) {
 			this.pos.x = this.direction === 1 ? -200 : screenWidth + 200;
 			this.pos.y = Math.random() * (MAX_HEIGHT_HOOK - MIN_HEIGHT_HOOK) + MIN_HEIGHT_HOOK;
 			this.posY = this.pos.y;
@@ -577,16 +653,16 @@ class Bubble extends ColliderObject {
 	}
 
 	update() {
-		if(this.visible) {
-			if(this.bonus) {
-				if(!this.rotating) {
-					if(this.pos.y > axisYRotationBubbles + radiusRotationBubbles) this.pos.y -= 2;
+		if (this.visible) {
+			if (this.bonus) {
+				if (!this.rotating) {
+					if (this.pos.y > axisYRotationBubbles + radiusRotationBubbles) this.pos.y -= 2;
 					else this.rotating = true;
 				}
 				else {
 					this.rotation++;
-		
-					this.pos.x = screenWidth/2 - 50 + (Math.cos(game.math.toRadians(this.rotation - 90)) * radiusRotationBubbles * 1.2);
+
+					this.pos.x = screenWidth / 2 - 50 + (Math.cos(game.math.toRadians(this.rotation - 90)) * radiusRotationBubbles * 1.2);
 					this.pos.y = axisYRotationBubbles + (Math.sin(game.math.toRadians(this.rotation + 90)) * radiusRotationBubbles);
 				}
 			}
@@ -594,13 +670,13 @@ class Bubble extends ColliderObject {
 				this.pos.x += 2 * this.direction * globalSpeed;
 				this.pos.y = this.posY + Math.sin(game.math.toRadians(this.rotation++)) * 30;
 
-				if(this.pos.x < -300 || this.pos.x > screenWidth + 300) this.visible = false;
+				if (this.pos.x < -300 || this.pos.x > screenWidth + 300) this.visible = false;
 			}
 		}
 	}
 
 	draw() {
-		if(this.visible) {
+		if (this.visible) {
 			super.draw(atlasTexture);
 			game.draw.text(this.text, this.pos.x + 50 + 2, this.pos.y + 50 + 10, 16, "#000", "center");
 			game.draw.text(this.text, this.pos.x + 50, this.pos.y + 50 + 8, 16, "#fff", "center");
@@ -653,7 +729,7 @@ const types = [
 	2, 1, 3, 0,
 	1, 3, 0, 2,
 	3, 0, 2, 1,
-	
+
 	0, 2, 3, 1,
 	2, 3, 1, 0,
 	3, 1, 0, 2,
@@ -674,10 +750,10 @@ const types = [
 	3, 2, 0, 1,
 	2, 0, 1, 3,
 ];
-let typesPointer = Math.floor(Math.random() * (types.length/4)) * 4;
+let typesPointer = Math.floor(Math.random() * (types.length / 4)) * 4;
 const getFishType = () => {
-	if(typesPointer === types.length) typesPointer = 0;
-	
+	if (typesPointer === types.length) typesPointer = 0;
+
 	switch (types[typesPointer++]) {
 		default:
 		case 0: return FishType.SMALL;
@@ -713,22 +789,6 @@ const recalculateCoins = () => {
 	GAME_5_WALIS = GAME_5_WALIS < 50 ? Math.floor(GAME_5_SCORE / (250)) : 50;
 };
 
-// const recalculateScore = () => {
-// 	switch (GAME_5_SCORE) {
-// 		case 500: speedNormal = 1.1; break;
-// 		case 1000: speedNormal = 1.3; break;
-// 		case 1500: speedNormal = 1.5; break;
-
-// 		case 2000: speedNormal = 1.6; break;
-// 		case 3000: speedNormal = 1.7; break;
-// 		case 4000: speedNormal = 1.8; break;
-
-// 		case 5000: speedNormal = 1.9; break;
-// 		case 6000: speedNormal = 2.0; break;
-// 		case 7000: speedNormal = 2.1; break;
-// 	}
-// };
-
 // Save Data
 const saveData = () => {
 	const date = new Date();
@@ -740,8 +800,8 @@ const saveData = () => {
 
 const powerUpCallback = () => {
 	fishes.forEach(fish => {
-		if(fish.direction === 1 && fish.pos.x < screenWidth/2 ||
-		fish.direction === -1 && fish.pos.x > screenWidth/2) fish.direction *= -1;
+		if (fish.direction === 1 && fish.pos.x < screenWidth / 2 ||
+			fish.direction === -1 && fish.pos.x > screenWidth / 2) fish.direction *= -1;
 	});
 
 	console.log("Power!")
@@ -788,15 +848,16 @@ game.init = () => {
 
 	setInterval(handleAddBubblesInterval, 6 * 1000);
 }
+
 game.update = () => {
-	if(play) {
-		if(lifes === 0) {
+	if (play) {
+		if (lifes === 0) {
 			play = false;
 			showGameOverPopUp();
 			return;
 		}
-		
-		if(GAME_5_VERSION >= 2) {
+
+		if (GAME_5_VERSION >= 2) {
 			powerUpListener();
 			// if (relayCounter > 0) relayCounter--;
 			// else {
@@ -806,9 +867,9 @@ game.update = () => {
 			// 	else btnRelayState = 0;
 			// }
 		}
-		if(GAME_5_VERSION == 3) {
+		if (GAME_5_VERSION == 3) {
 			uniquePowerUpListener();
-			
+
 			// if (!panicButtonUsed && (game.inputs.keypad.isKeyPress(game.utils.keycode.shift) || btnPanic.isClick())) {
 			// 	totalBubbles = 0;
 			// 	btnPanicState = 1;
@@ -826,9 +887,10 @@ game.update = () => {
 		bonusBubbles.loop("update");
 	}
 }
+
 game.canvas = () => {
 	background.draw();
-	
+
 	miniBubbles.loop("draw");
 	fishes.loop("draw");
 	player.draw();
@@ -838,4 +900,5 @@ game.canvas = () => {
 
 	drawLifes();
 }
+
 game.engine.run();
